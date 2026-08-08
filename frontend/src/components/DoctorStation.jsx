@@ -17,7 +17,6 @@ export default function DoctorStation({
   const [prescriptionNotes, setPrescriptionNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Set initial selected doctor
   useEffect(() => {
     if (doctors && doctors.length > 0 && !selectedDoctorId) {
       setSelectedDoctorId(doctors[0].id.toString());
@@ -332,7 +331,6 @@ export default function DoctorStation({
               </div>
             </div>
           ) : (
-            /* Idle Screen when no patient is in consultation */
             <div className="glass-card" style={{
               padding: '60px 40px',
               textAlign: 'center',

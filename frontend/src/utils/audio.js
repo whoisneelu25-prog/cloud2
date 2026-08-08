@@ -1,5 +1,3 @@
-// Audio synthesized chime & speech announcement for live queue board
-
 let audioCtx = null;
 
 function getAudioContext() {
@@ -15,9 +13,6 @@ function getAudioContext() {
   return audioCtx;
 }
 
-/**
- * Plays a modern hospital chime using Web Audio API synthesizer
- */
 export function playChime() {
   try {
     const ctx = getAudioContext();
@@ -25,7 +20,6 @@ export function playChime() {
 
     const now = ctx.currentTime;
 
-    // Tone 1 (High bell - E5 ~659Hz)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
@@ -37,7 +31,6 @@ export function playChime() {
     osc1.start(now);
     osc1.stop(now + 0.8);
 
-    // Tone 2 (Harmonic bell - B5 ~987Hz)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sine';
@@ -53,21 +46,17 @@ export function playChime() {
   }
 }
 
-/**
- * Announce token number and room using SpeechSynthesis
- */
 export function announceToken(tokenNumber, roomOrDoctor) {
   try {
     playChime();
 
     if ('speechSynthesis' in window) {
-      // Small delay after chime
       setTimeout(() => {
         const text = `Token ${tokenNumber.split('').join(' ')}, please proceed to ${roomOrDoctor || 'Consultation Room'}`;
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.9;
         utterance.pitch = 1.0;
-        window.speechSynthesis.cancel(); // clear previous
+        window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utterance);
       }, 400);
     }

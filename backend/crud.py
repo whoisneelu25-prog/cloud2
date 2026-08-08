@@ -6,10 +6,7 @@ from sqlalchemy import func, or_, desc, asc
 import models
 import schemas
 
-# ==================== PATIENT CRUD ====================
-
 def generate_mrn(db: Session) -> str:
-    """Generate next unique Medical Record Number (e.g., PAT-1001)."""
     last_patient = db.query(models.Patient).order_by(models.Patient.id.desc()).first()
     next_num = 1001 if not last_patient else last_patient.id + 1001
     return f"PAT-{next_num:04d}"
@@ -55,7 +52,6 @@ def get_patient_count(db: Session, search: Optional[str] = None) -> int:
 
 def create_patient(db: Session, patient_in: schemas.PatientCreate) -> models.Patient:
     mrn = patient_in.mrn or generate_mrn(db)
-    # Ensure uniqueness
     while db.query(models.Patient).filter(models.Patient.mrn == mrn).first():
         next_id = (db.query(func.max(models.Patient.id)).scalar() or 0) + 1
         mrn = f"PAT-{next_id + 1000:04d}"
@@ -99,8 +95,6 @@ def delete_patient(db: Session, patient_id: int) -> bool:
     db.commit()
     return True
 
-
-# ==================== DOCTOR CRUD ====================
 
 def get_doctor(db: Session, doctor_id: int) -> Optional[models.Doctor]:
     return db.query(models.Doctor).filter(models.Doctor.id == doctor_id).first()
@@ -154,8 +148,6 @@ def delete_doctor(db: Session, doctor_id: int) -> bool:
     db.commit()
     return True
 
-
-# ==================== APPOINTMENT CRUD ====================
 
 def generate_appointment_number(db: Session, appt_date: datetime.date) -> str:
     date_str = appt_date.strftime("%Y%m%d")
@@ -229,10 +221,7 @@ def delete_appointment(db: Session, appointment_id: int) -> bool:
     return True
 
 
-# ==================== QUEUE ENGINE & OPERATIONS ====================
-
 def get_specialty_prefix(specialization: Optional[str], doctor_id: Optional[int]) -> str:
-    """Return a short prefix for token numbering (e.g. A, B, C or GEN, PED)."""
     if not specialization:
         return "A"
     spec_clean = specialization.upper()
@@ -256,8 +245,6 @@ def get_specialty_prefix(specialization: Optional[str], doctor_id: Optional[int]
     return "A"
 
 def generate_token_number(db: Session, doctor_id: Optional[int], today: datetime.date, priority: str = "normal") -> tuple[str, int]:
-    """Generate daily sequence and token string like A-001 or EMG-001."""
-    # Count tickets for today
     today_count = db.query(func.count(models.QueueTicket.id)).filter(
         models.QueueTicket.queue_date == today
     ).scalar() or 0
@@ -285,7 +272,6 @@ def issue_queue_ticket(
     today = datetime.date.today()
     token, seq = generate_token_number(db, doctor_id, today, priority)
 
-    # Calculate estimated wait time based on waiting queue count
     waiting_count = db.query(func.count(models.QueueTicket.id)).filter(
         models.QueueTicket.queue_date == today,
         models.QueueTicket.status == "waiting",
@@ -335,7 +321,6 @@ def get_live_queue(
     if status:
         query = query.filter(models.QueueTicket.status == status)
 
-    # Custom priority order: emergency first, then urgent, senior, normal
     priority_order = func.field(models.QueueTicket.priority, "emergency", "urgent", "senior", "normal")
     return query.order_by(
         priority_order.asc(),
@@ -343,13 +328,8 @@ def get_live_queue(
     ).all()
 
 def call_next_patient(db: Session, doctor_id: int) -> Optional[models.QueueTicket]:
-    """
-    Finds next waiting ticket for the given doctor (or unassigned queue),
-    marks it 'serving', sets called_time, and marks any previous serving ticket of that doctor as 'completed'.
-    """
     today = datetime.date.today()
 
-    # Automatically complete currently serving ticket for this doctor if any
     current_serving = db.query(models.QueueTicket).filter(
         models.QueueTicket.queue_date == today,
         models.QueueTicket.doctor_id == doctor_id,
@@ -359,7 +339,6 @@ def call_next_patient(db: Session, doctor_id: int) -> Optional[models.QueueTicke
         s_ticket.status = "completed"
         s_ticket.completed_time = datetime.datetime.utcnow()
 
-    # Priority sorting: emergency -> urgent -> senior -> normal
     priority_order = func.field(models.QueueTicket.priority, "emergency", "urgent", "senior", "normal")
     next_ticket = db.query(models.QueueTicket).filter(
         models.QueueTicket.queue_date == today,
@@ -423,8 +402,6 @@ def delete_queue_ticket(db: Session, ticket_id: int) -> bool:
     return True
 
 
-# ==================== DASHBOARD & REALTIME STATS ====================
-
 def get_dashboard_stats(db: Session) -> schemas.DashboardStats:
     today = datetime.date.today()
 
@@ -433,7 +410,6 @@ def get_dashboard_stats(db: Session) -> schemas.DashboardStats:
         func.date(models.Patient.created_at) == today
     ).scalar() or 0
 
-    # Queue counts today
     q_waiting = db.query(func.count(models.QueueTicket.id)).filter(
         models.QueueTicket.queue_date == today,
         models.QueueTicket.status == "waiting"
@@ -454,14 +430,11 @@ def get_dashboard_stats(db: Session) -> schemas.DashboardStats:
         models.QueueTicket.status == "skipped"
     ).scalar() or 0
 
-    # Active doctors
     doctors = db.query(models.Doctor).all()
     active_docs_count = sum(1 for d in doctors if d.status == "available")
 
-    # Doctor summaries
     doc_summaries = []
     for doc in doctors:
-        # Current serving token
         serving_ticket = db.query(models.QueueTicket).filter(
             models.QueueTicket.queue_date == today,
             models.QueueTicket.doctor_id == doc.id,
@@ -493,7 +466,6 @@ def get_dashboard_stats(db: Session) -> schemas.DashboardStats:
             )
         )
 
-    # Average wait time estimation
     avg_wait = 12 if q_waiting == 0 else max(5, int((q_waiting / max(1, active_docs_count)) * 10))
 
     return schemas.DashboardStats(

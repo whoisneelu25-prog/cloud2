@@ -42,7 +42,6 @@ def ensure_database_exists():
         print(f"[DB INIT ERROR] Could not verify/create database '{DB_NAME}': {e}")
         raise e
 
-# Ensure database exists
 ensure_database_exists()
 
 engine = create_engine(

@@ -81,7 +81,6 @@ export default function ReceptionQueueManager({
     }
   };
 
-  // Filter queue by search term (Patient name or Token number or MRN)
   const filteredQueue = queue.filter(t => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();

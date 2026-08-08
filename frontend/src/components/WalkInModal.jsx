@@ -17,14 +17,12 @@ export default function WalkInModal({
   const [selectedPatientId, setSelectedPatientId] = useState(preselectedPatient?.id || '');
   const [patientSearch, setPatientSearch] = useState('');
 
-  // New patient state
   const [fullName, setFullName] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Male');
   const [phone, setPhone] = useState('');
   const [bloodGroup, setBloodGroup] = useState('O+');
 
-  // Token options
   const [doctorId, setDoctorId] = useState('');
   const [priority, setPriority] = useState('normal');
   const [notes, setNotes] = useState('');

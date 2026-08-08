@@ -13,7 +13,7 @@ class Doctor(Base):
     name = Column(String(120), nullable=False)
     specialization = Column(String(100), nullable=False, default="General Medicine")
     room_number = Column(String(50), nullable=False)
-    status = Column(String(30), default="available", nullable=False)  # available, busy, off_duty
+    status = Column(String(30), default="available", nullable=False)
     phone = Column(String(30), nullable=True)
     email = Column(String(120), nullable=True)
     max_daily_tokens = Column(Integer, default=40, nullable=False)
@@ -28,14 +28,14 @@ class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    mrn = Column(String(50), unique=True, index=True, nullable=False)  # e.g., PAT-1001
+    mrn = Column(String(50), unique=True, index=True, nullable=False)
     full_name = Column(String(150), index=True, nullable=False)
     age = Column(Integer, nullable=False)
-    gender = Column(String(20), nullable=False)  # Male, Female, Other
+    gender = Column(String(20), nullable=False)
     phone = Column(String(30), index=True, nullable=False)
     email = Column(String(120), nullable=True)
     address = Column(Text, nullable=True)
-    blood_group = Column(String(10), nullable=True)  # A+, O+, etc.
+    blood_group = Column(String(10), nullable=True)
     emergency_contact = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
@@ -53,8 +53,8 @@ class Appointment(Base):
     patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False)
     appointment_date = Column(Date, nullable=False, index=True)
-    time_slot = Column(String(30), nullable=False)  # e.g., "10:00 AM"
-    status = Column(String(30), default="scheduled", nullable=False)  # scheduled, confirmed, in_progress, completed, cancelled, no_show
+    time_slot = Column(String(30), nullable=False)
+    status = Column(String(30), default="scheduled", nullable=False)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
@@ -68,12 +68,12 @@ class QueueTicket(Base):
     __tablename__ = "queue_tickets"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    token_number = Column(String(30), index=True, nullable=False)  # e.g., "A-001", "D1-002"
+    token_number = Column(String(30), index=True, nullable=False)
     patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     appointment_id = Column(Integer, ForeignKey("appointments.id", ondelete="SET NULL"), nullable=True)
-    status = Column(String(30), default="waiting", index=True, nullable=False)  # waiting, serving, completed, skipped, cancelled
-    priority = Column(String(30), default="normal", index=True, nullable=False)  # normal, urgent, emergency, senior
+    status = Column(String(30), default="waiting", index=True, nullable=False)
+    priority = Column(String(30), default="normal", index=True, nullable=False)
     queue_date = Column(Date, default=datetime.date.today, index=True, nullable=False)
     daily_sequence = Column(Integer, default=1, nullable=False)
     estimated_wait_minutes = Column(Integer, default=15, nullable=False)

@@ -26,7 +26,6 @@ async function request(endpoint, options = {}) {
             : errorData.detail;
         }
       } catch (e) {
-        // use fallback text
       }
       throw new Error(errorMsg);
     }
@@ -39,13 +38,11 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // System & Health
   getHealth: () => request('/health'),
   getStats: () => request('/stats'),
   getLiveDisplay: () => request('/queue/display'),
   seedSampleData: () => request('/seed', { method: 'POST' }),
 
-  // Patients
   getPatients: (params = {}) => {
     const query = new URLSearchParams();
     if (params.skip !== undefined) query.append('skip', params.skip);
@@ -66,7 +63,6 @@ export const api = {
     method: 'DELETE',
   }),
 
-  // Doctors
   getDoctors: (params = {}) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
@@ -86,7 +82,6 @@ export const api = {
     method: 'DELETE',
   }),
 
-  // Queue Operations
   getQueue: (params = {}) => {
     const query = new URLSearchParams();
     if (params.doctor_id) query.append('doctor_id', params.doctor_id);
@@ -113,7 +108,6 @@ export const api = {
     method: 'DELETE',
   }),
 
-  // Appointments
   getAppointments: (params = {}) => {
     const query = new URLSearchParams();
     if (params.date) query.append('date', params.date);

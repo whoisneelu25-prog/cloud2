@@ -22,11 +22,9 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
 
-  // Walk-in modal state
   const [isWalkinOpen, setIsWalkinOpen] = useState(false);
   const [walkinPatient, setWalkinPatient] = useState(null);
 
-  // Keep track of previous serving tokens for auto-announcements
   const prevServingTokensRef = useRef(new Set());
 
   const notify = (type, title, message) => {
@@ -41,7 +39,6 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Main data loader
   const refreshData = async () => {
     try {
       const [healthRes, statsRes, docsRes, boardRes] = await Promise.all([
@@ -56,13 +53,11 @@ export default function App() {
       setDoctors(docsRes);
       setLiveBoard(boardRes);
 
-      // Check if new tokens are called for sound announcement
       if (isAudioEnabled && boardRes?.now_serving) {
         const currentServingIds = new Set(boardRes.now_serving.map(t => `${t.id}-${t.token_number}`));
         boardRes.now_serving.forEach(ticket => {
           const key = `${ticket.id}-${ticket.token_number}`;
           if (!prevServingTokensRef.current.has(key) && prevServingTokensRef.current.size > 0) {
-            // New serving token detected
             announceToken(ticket.token_number, `${ticket.doctor?.room_number || 'Room'}`);
           }
         });
@@ -73,7 +68,6 @@ export default function App() {
     }
   };
 
-  // Initial load and periodic polling interval (every 3 seconds)
   useEffect(() => {
     refreshData();
     const interval = setInterval(refreshData, 3000);

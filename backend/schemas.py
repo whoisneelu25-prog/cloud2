@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime, date
 
-# ==================== DOCTOR SCHEMAS ====================
 class DoctorBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=120)
     specialization: str = Field(..., min_length=2, max_length=100)
@@ -31,7 +30,6 @@ class DoctorResponse(DoctorBase):
     updated_at: datetime
 
 
-# ==================== PATIENT SCHEMAS ====================
 class PatientBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=150)
     age: int = Field(..., ge=0, le=130)
@@ -44,7 +42,7 @@ class PatientBase(BaseModel):
     notes: Optional[str] = None
 
 class PatientCreate(PatientBase):
-    mrn: Optional[str] = None  # Auto-generated if not supplied
+    mrn: Optional[str] = None
 
 class PatientUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=150)
@@ -65,7 +63,6 @@ class PatientResponse(PatientBase):
     updated_at: datetime
 
 
-# ==================== APPOINTMENT SCHEMAS ====================
 class AppointmentBase(BaseModel):
     patient_id: int
     doctor_id: int
@@ -94,7 +91,6 @@ class AppointmentResponse(AppointmentBase):
     doctor: Optional[DoctorResponse] = None
 
 
-# ==================== QUEUE SCHEMAS ====================
 class QueueTicketCreate(BaseModel):
     patient_id: int
     doctor_id: Optional[int] = None
@@ -103,7 +99,6 @@ class QueueTicketCreate(BaseModel):
     notes: Optional[str] = None
 
 class QueueWalkInCreate(BaseModel):
-    # Direct walk-in: registers patient if needed or selects existing, and issues ticket in one step
     patient_id: Optional[int] = None
     full_name: Optional[str] = None
     age: Optional[int] = None
@@ -143,7 +138,6 @@ class QueueTicketResponse(BaseModel):
     doctor: Optional[DoctorResponse] = None
 
 
-# ==================== DASHBOARD & DISPLAY SCHEMAS ====================
 class DoctorQueueSummary(BaseModel):
     doctor_id: int
     doctor_name: str

@@ -10,7 +10,6 @@ def init_db(seed_doctors: bool = True):
     if seed_doctors:
         db = SessionLocal()
         try:
-            # Check if any doctor exists
             doc_count = db.query(models.Doctor).count()
             if doc_count == 0:
                 print("Seeding initial clinic doctors...")

@@ -15,14 +15,12 @@ export default function PatientRegistration({
   const [searchTerm, setSearchTerm] = useState('');
   const [totalCount, setTotalCount] = useState(0);
 
-  // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientHistory, setPatientHistory] = useState(null);
 
-  // New patient form data
   const [formData, setFormData] = useState({
     full_name: '',
     age: '',
@@ -38,7 +36,6 @@ export default function PatientRegistration({
     priority: 'normal'
   });
 
-  // Edit patient form data
   const [editFormData, setEditFormData] = useState({
     id: null,
     full_name: '',
@@ -95,7 +92,6 @@ export default function PatientRegistration({
       const newPatient = await api.createPatient(payload);
       onNotify('success', 'Patient Registered', `Patient ${newPatient.full_name} registered with MRN: ${newPatient.mrn}`);
 
-      // Auto issue queue token if checked
       if (formData.auto_issue_token) {
         const ticket = await api.issueTicket({
           patient_id: newPatient.id,
@@ -107,7 +103,6 @@ export default function PatientRegistration({
       }
 
       setShowAddModal(false);
-      // Reset form
       setFormData({
         full_name: '',
         age: '',

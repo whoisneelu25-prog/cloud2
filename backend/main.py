@@ -17,7 +17,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for Frontend development server (Vite default is 5173, also allow any local port)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,12 +26,9 @@ app.add_middleware(
 )
 
 
-# ==================== SYSTEM & HEALTH ENDPOINTS ====================
-
 @app.get("/api/health", summary="Health Check and MySQL Connectivity")
 def health_check(db: Session = Depends(get_db)):
     try:
-        # Run a lightweight test query
         db.execute(text("SELECT 1"))
         doc_count = db.query(models.Doctor).count()
         patient_count = db.query(models.Patient).count()
@@ -67,8 +63,6 @@ def get_stats(db: Session = Depends(get_db)):
 def get_display_board(db: Session = Depends(get_db)):
     return crud.get_live_display_board(db)
 
-
-# ==================== DOCTOR ENDPOINTS ====================
 
 @app.get("/api/doctors", response_model=List[schemas.DoctorResponse], summary="List all Doctors")
 def list_doctors(
@@ -108,8 +102,6 @@ def delete_doctor(doctor_id: int, db: Session = Depends(get_db)):
     return {"message": "Doctor deleted successfully", "id": doctor_id}
 
 
-# ==================== PATIENT ENDPOINTS ====================
-
 @app.get("/api/patients", summary="List and Search Patients")
 def list_patients(
     skip: int = Query(0, ge=0),
@@ -133,7 +125,6 @@ def get_patient(patient_id: int, db: Session = Depends(get_db)):
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # Fetch patient's past appointments and queue tickets
     appointments = db.query(models.Appointment).filter(models.Appointment.patient_id == patient_id).order_by(models.Appointment.created_at.desc()).all()
     queue_tickets = db.query(models.QueueTicket).filter(models.QueueTicket.patient_id == patient_id).order_by(models.QueueTicket.created_at.desc() if hasattr(models.QueueTicket, 'created_at') else models.QueueTicket.id.desc()).all()
 
@@ -165,8 +156,6 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db)):
     return {"message": "Patient deleted successfully", "id": patient_id}
 
 
-# ==================== QUEUE ENDPOINTS ====================
-
 @app.get("/api/queue", response_model=List[schemas.QueueTicketResponse], summary="List Queue Tickets")
 def list_queue(
     doctor_id: Optional[int] = None,
@@ -186,12 +175,10 @@ def list_queue(
 
 @app.post("/api/queue/ticket", response_model=schemas.QueueTicketResponse, status_code=status.HTTP_201_CREATED, summary="Issue Queue Ticket for Patient")
 def issue_ticket(ticket_in: schemas.QueueTicketCreate, db: Session = Depends(get_db)):
-    # Verify patient exists
     patient = crud.get_patient(db, ticket_in.patient_id)
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    # If doctor provided, verify doctor
     if ticket_in.doctor_id:
         doctor = crud.get_doctor(db, ticket_in.doctor_id)
         if not doctor:
@@ -210,7 +197,6 @@ def issue_ticket(ticket_in: schemas.QueueTicketCreate, db: Session = Depends(get
 
 @app.post("/api/queue/walkin", response_model=schemas.QueueTicketResponse, status_code=status.HTTP_201_CREATED, summary="Quick Walk-in Registration & Ticket Issuance")
 def walkin_registration(walkin: schemas.QueueWalkInCreate, db: Session = Depends(get_db)):
-    # If patient_id provided, use existing
     patient_id = walkin.patient_id
     if not patient_id:
         if not walkin.full_name or walkin.age is None or not walkin.gender or not walkin.phone:
@@ -273,8 +259,6 @@ def delete_queue_ticket(ticket_id: int, db: Session = Depends(get_db)):
     return {"message": "Queue ticket deleted successfully", "id": ticket_id}
 
 
-# ==================== APPOINTMENT ENDPOINTS ====================
-
 @app.get("/api/appointments", response_model=List[schemas.AppointmentResponse], summary="List Appointments")
 def list_appointments(
     date_str: Optional[str] = Query(None, alias="date"),
@@ -301,7 +285,6 @@ def list_appointments(
 
 @app.post("/api/appointments", response_model=schemas.AppointmentResponse, status_code=status.HTTP_201_CREATED, summary="Create Appointment")
 def create_appointment(appt_in: schemas.AppointmentCreate, db: Session = Depends(get_db)):
-    # Verify patient and doctor exist
     if not crud.get_patient(db, appt_in.patient_id):
         raise HTTPException(status_code=404, detail="Patient not found")
     if not crud.get_doctor(db, appt_in.doctor_id):
@@ -325,11 +308,8 @@ def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     return {"message": "Appointment deleted successfully", "id": appointment_id}
 
 
-# ==================== SAMPLE SEED DEMO ENDPOINT ====================
-
 @app.post("/api/seed", summary="Seed Sample Clinic Activity Data")
 def seed_demo_data(db: Session = Depends(get_db)):
-    """Seed sample patients and queue activity for demonstration."""
     sample_patients = [
         {"full_name": "Aarav Sharma", "age": 32, "gender": "Male", "phone": "+91 98451 12345", "blood_group": "O+", "emergency_contact": "Sunita Sharma (Wife)", "notes": "Mild fever and sore throat"},
         {"full_name": "Rohan Gupta", "age": 54, "gender": "Male", "phone": "+91 98201 45678", "blood_group": "A+", "emergency_contact": "Meera Gupta (Wife)", "notes": "Routine cardiology follow-up, BP check"},
@@ -345,7 +325,6 @@ def seed_demo_data(db: Session = Depends(get_db)):
 
     created_patients = []
     for p_data in sample_patients:
-        # Check if exists by phone
         existing = db.query(models.Patient).filter(models.Patient.phone == p_data["phone"]).first()
         if not existing:
             p_obj = crud.create_patient(db, schemas.PatientCreate(**p_data))
@@ -353,27 +332,21 @@ def seed_demo_data(db: Session = Depends(get_db)):
         else:
             created_patients.append(existing)
 
-    # Issue sample queue tickets for today
     today = datetime.date.today()
     existing_tickets = db.query(models.QueueTicket).filter(models.QueueTicket.queue_date == today).count()
     if existing_tickets == 0 and created_patients and doctors:
-        # Ticket 1: Dr. Jenkins (Serving)
         t1 = crud.issue_queue_ticket(db, created_patients[0].id, doctors[0].id, priority="normal", notes="Fever check")
         crud.update_queue_ticket_status(db, t1.id, "serving", doctor_id=doctors[0].id)
 
-        # Ticket 2: Dr. Chen (Waiting, Senior)
         if len(created_patients) > 1 and len(doctors) > 1:
             crud.issue_queue_ticket(db, created_patients[1].id, doctors[1].id, priority="senior", notes="BP check")
 
-        # Ticket 3: Dr. Patel (Waiting, Urgent)
         if len(created_patients) > 2 and len(doctors) > 2:
             crud.issue_queue_ticket(db, created_patients[2].id, doctors[2].id, priority="urgent", notes="Allergy")
 
-        # Ticket 4: Dr. Vance (Waiting, Normal)
         if len(created_patients) > 3 and len(doctors) > 3:
             crud.issue_queue_ticket(db, created_patients[3].id, doctors[3].id, priority="normal", notes="Knee joint")
 
-        # Ticket 5: Dr. Rostova (Waiting, Normal)
         if len(created_patients) > 4 and len(doctors) > 4:
             crud.issue_queue_ticket(db, created_patients[4].id, doctors[4].id, priority="normal", notes="Dermatology")
 
